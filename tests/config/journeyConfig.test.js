@@ -4,10 +4,10 @@ import { JOURNEY_WAYPOINTS, PHASE_CONFIG } from '@/config/journeyConfig.js'
 
 describe('journeyConfig', () => {
   it('should define all required waypoints', () => {
-    expect(JOURNEY_WAYPOINTS.SURFACE).toBeDefined()
-    expect(JOURNEY_WAYPOINTS.LOW_ORBIT).toBeDefined()
+    expect(JOURNEY_WAYPOINTS.CLOSE_VIEW).toBeDefined()
+    expect(JOURNEY_WAYPOINTS.MEDIUM_VIEW).toBeDefined()
     expect(JOURNEY_WAYPOINTS.TRANSITION).toBeDefined()
-    expect(JOURNEY_WAYPOINTS.CONTEMPLATION).toBeDefined()
+    expect(JOURNEY_WAYPOINTS.DISTANT_VIEW).toBeDefined()
     expect(JOURNEY_WAYPOINTS.PALE_BLUE_DOT).toBeDefined()
   })
 
@@ -27,13 +27,15 @@ describe('journeyConfig', () => {
   })
 
   it('should have waypoints at increasing distances from Earth', () => {
-    const surface = JOURNEY_WAYPOINTS.SURFACE.length()
-    const lowOrbit = JOURNEY_WAYPOINTS.LOW_ORBIT.length()
+    const closeView = JOURNEY_WAYPOINTS.CLOSE_VIEW.length()
+    const mediumView = JOURNEY_WAYPOINTS.MEDIUM_VIEW.length()
     const transition = JOURNEY_WAYPOINTS.TRANSITION.length()
-    const contemplation = JOURNEY_WAYPOINTS.CONTEMPLATION.length()
+    const distantView = JOURNEY_WAYPOINTS.DISTANT_VIEW.length()
+    const paleBlueDot = JOURNEY_WAYPOINTS.PALE_BLUE_DOT.length()
 
-    expect(lowOrbit).toBeGreaterThan(surface)
-    expect(transition).toBeGreaterThan(lowOrbit)
-    expect(contemplation).toBeGreaterThan(transition)
+    expect(mediumView).toBeGreaterThan(closeView)
+    expect(transition).toBeGreaterThan(mediumView)
+    expect(distantView).toBeGreaterThan(transition)
+    expect(paleBlueDot).toBeGreaterThan(distantView)
   })
 })
