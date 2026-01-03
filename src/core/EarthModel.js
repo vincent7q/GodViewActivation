@@ -22,9 +22,31 @@ export default class EarthModel {
     this.createCloudsMesh()
     this.createAtmosphere()
 
+    // Randomize Earth rotation for varied starting views
+    this.randomizeRotation()
+
     this.group.add(this.earthMesh)
     this.group.add(this.cloudsMesh)
     this.group.add(this.atmosphereMesh)
+  }
+
+  randomizeRotation() {
+    // Random longitude rotation (0 to 360 degrees)
+    const randomLongitude = Math.random() * Math.PI * 2
+
+    // Random latitude tilt (-30 to +30 degrees for better viewing angles)
+    // Avoid extreme poles which look less interesting
+    const randomLatitude = (Math.random() - 0.5) * Math.PI / 3
+
+    // Apply random rotations to Earth
+    this.earthMesh.rotation.y = randomLongitude
+    this.earthMesh.rotation.x = randomLatitude
+
+    // Apply same base rotation to clouds (they'll rotate independently during animation)
+    this.cloudsMesh.rotation.y = randomLongitude
+    this.cloudsMesh.rotation.x = randomLatitude
+
+    console.log(`🌍 Random Earth view: longitude ${(randomLongitude * 180 / Math.PI).toFixed(1)}°, latitude ${(randomLatitude * 180 / Math.PI).toFixed(1)}°`)
   }
 
   createEarthMesh() {
@@ -57,7 +79,7 @@ export default class EarthModel {
     })
 
     this.earthMesh = new THREE.Mesh(geometry, material)
-    this.earthMesh.rotation.y = -Math.PI / 2 // Rotate to show continents
+    // Rotation will be randomized in randomizeRotation()
   }
 
   createCloudsMesh() {
@@ -83,7 +105,7 @@ export default class EarthModel {
     const material = new THREE.MeshPhongMaterial({
       map: cloudTexture,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.3, // Reduced from 0.8 to 0.3 for subtle cloud layer
       depthWrite: false
     })
 
