@@ -1,6 +1,7 @@
 {
   "name": "godviewactivation",
   "version": "1.0.0",
+  "type": "module",
   "description": "**A psychological intervention platform designed to trigger the Overview Effect through web-based Earth-from-space experience.**",
   "main": "index.js",
   "directories": {
