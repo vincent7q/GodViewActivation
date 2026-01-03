@@ -5,21 +5,19 @@
       v-if="showPriming"
       @ready="handlePrimingComplete"
     />
-    <div v-else class="journey-placeholder">
-      <p>Journey will start here...</p>
-    </div>
+    <JourneyScene v-else />
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import PrimingScreen from './components/PrimingScreen.vue'
+import JourneyScene from './components/JourneyScene.vue'
 
 const showPriming = ref(true)
 
 const handlePrimingComplete = () => {
   showPriming.value = false
-  console.log('Priming complete, starting journey...')
 }
 </script>
 
