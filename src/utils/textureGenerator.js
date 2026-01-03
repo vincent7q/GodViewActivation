@@ -57,13 +57,14 @@ export function generatePlaceholderCloudTexture(resolution = 512) {
   // Transparent background
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  // White clouds with alpha
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'
+  // White clouds with higher opacity - more visible
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
 
-  for (let i = 0; i < 20; i++) {
+  // More clouds for better coverage
+  for (let i = 0; i < 60; i++) {
     const x = Math.random() * canvas.width
     const y = Math.random() * canvas.height
-    const radius = Math.random() * 30 + 10
+    const radius = Math.random() * 40 + 20 // Larger clouds
 
     ctx.beginPath()
     ctx.arc(x, y, radius, 0, Math.PI * 2)

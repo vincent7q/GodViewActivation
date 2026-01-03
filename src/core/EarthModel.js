@@ -70,7 +70,7 @@ export default class EarthModel {
   update(deltaTime) {
     // Slow cloud rotation for subtle animation
     if (this.cloudsMesh) {
-      this.cloudsMesh.rotation.y += deltaTime * 0.00005
+      this.cloudsMesh.rotation.y += deltaTime * 0.05 // Much more visible rotation
     }
   }
 
