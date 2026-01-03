@@ -4,7 +4,7 @@ import { JOURNEY_WAYPOINTS, PHASE_CONFIG } from '@/config/journeyConfig.js'
 
 describe('journeyConfig', () => {
   it('should define all required waypoints', () => {
-    expect(JOURNEY_WAYPOINTS.CLOSE_VIEW).toBeDefined()
+    expect(JOURNEY_WAYPOINTS.START_VIEW).toBeDefined()
     expect(JOURNEY_WAYPOINTS.MEDIUM_VIEW).toBeDefined()
     expect(JOURNEY_WAYPOINTS.TRANSITION).toBeDefined()
     expect(JOURNEY_WAYPOINTS.DISTANT_VIEW).toBeDefined()
@@ -27,13 +27,13 @@ describe('journeyConfig', () => {
   })
 
   it('should have waypoints at increasing distances from Earth', () => {
-    const closeView = JOURNEY_WAYPOINTS.CLOSE_VIEW.length()
+    const startView = JOURNEY_WAYPOINTS.START_VIEW.length()
     const mediumView = JOURNEY_WAYPOINTS.MEDIUM_VIEW.length()
     const transition = JOURNEY_WAYPOINTS.TRANSITION.length()
     const distantView = JOURNEY_WAYPOINTS.DISTANT_VIEW.length()
     const paleBlueDot = JOURNEY_WAYPOINTS.PALE_BLUE_DOT.length()
 
-    expect(mediumView).toBeGreaterThan(closeView)
+    expect(mediumView).toBeGreaterThan(startView)
     expect(transition).toBeGreaterThan(mediumView)
     expect(distantView).toBeGreaterThan(transition)
     expect(paleBlueDot).toBeGreaterThan(distantView)

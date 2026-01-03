@@ -7,23 +7,23 @@ import * as THREE from 'three'
  * Earth radius = 6,371 km
  *
  * Note: Camera positions must be far enough from Earth to see it properly
- * Recommended minimum: 10,000 km from center for good visibility
+ * Starting at 21,000 km for a big beautiful Earth view
  */
 export const JOURNEY_WAYPOINTS = {
-  // Close orbit - nice view of Earth (altitude: ~8,000 km)
-  CLOSE_VIEW: new THREE.Vector3(0, 15000, 0),
+  // Starting view - big Earth filling view (altitude: ~14,600 km)
+  START_VIEW: new THREE.Vector3(0, 21000, 0),
 
-  // Medium orbit - see full globe (altitude: ~20,000 km)
-  MEDIUM_VIEW: new THREE.Vector3(0, 27000, 0),
+  // Medium orbit - see full globe (altitude: ~23,600 km)
+  MEDIUM_VIEW: new THREE.Vector3(0, 30000, 0),
 
-  // Higher orbit for transition (altitude: ~35,000 km)
-  TRANSITION: new THREE.Vector3(0, 0, 42000),
+  // Higher orbit for transition (altitude: ~42,600 km)
+  TRANSITION: new THREE.Vector3(0, 0, 49000),
 
-  // Distant view - Earth as sphere in space (altitude: ~65,000 km)
-  DISTANT_VIEW: new THREE.Vector3(50000, 35000, 0),
+  // Distant view - Earth as sphere in space (altitude: ~73,600 km)
+  DISTANT_VIEW: new THREE.Vector3(55000, 40000, 0),
 
-  // "Pale blue dot" view (altitude: ~145,000 km)
-  PALE_BLUE_DOT: new THREE.Vector3(0, 0, 152000),
+  // "Pale blue dot" view (altitude: ~163,600 km)
+  PALE_BLUE_DOT: new THREE.Vector3(0, 0, 170000),
 
   // Return to closer orbit for ending
   CLOSE_ORBIT: new THREE.Vector3(0, 15000, 15000)
@@ -36,7 +36,7 @@ export const PHASE_CONFIG = [
   {
     name: 'Ascent',
     duration: 120000, // 2 minutes
-    cameraStart: JOURNEY_WAYPOINTS.CLOSE_VIEW,
+    cameraStart: JOURNEY_WAYPOINTS.START_VIEW,
     cameraEnd: JOURNEY_WAYPOINTS.MEDIUM_VIEW,
     description: 'Rising above Earth - the planet comes into full view'
   },

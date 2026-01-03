@@ -123,17 +123,22 @@ const initScene = () => {
 }
 
 const addLighting = () => {
-  // Ambient light (slight blue for space)
-  const ambientLight = new THREE.AmbientLight(0x1a1a2e, 0.3)
+  // Brighter ambient light for sunny daytime feel
+  const ambientLight = new THREE.AmbientLight(0x4080ff, 0.6)
   sceneManager.scene.add(ambientLight)
 
-  // Directional sun light (golden hour)
-  const sunLight = new THREE.DirectionalLight(0xffd580, 1.5)
-  sunLight.position.set(1, 0.3, 0.5).normalize()
+  // Strong directional sun light (bright daylight, slightly warm)
+  const sunLight = new THREE.DirectionalLight(0xffffff, 2.5)
+  sunLight.position.set(1, 0.5, 0.8).normalize()
   sceneManager.scene.add(sunLight)
 
-  // Rim light for Earth edge
-  const rimLight = new THREE.DirectionalLight(0x8ba6ff, 0.4)
+  // Bright fill light to enhance blue tones
+  const fillLight = new THREE.DirectionalLight(0x80b0ff, 1.2)
+  fillLight.position.set(-0.5, 0.5, -0.5).normalize()
+  sceneManager.scene.add(fillLight)
+
+  // Subtle rim light for atmosphere edge
+  const rimLight = new THREE.DirectionalLight(0xa0c0ff, 0.6)
   rimLight.position.set(-1, 0, -0.5).normalize()
   sceneManager.scene.add(rimLight)
 }
