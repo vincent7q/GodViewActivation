@@ -41,6 +41,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import SceneManager from '@/core/SceneManager.js'
 import EarthModel from '@/core/EarthModel.js'
 import JourneyOrchestrator from '@/core/JourneyOrchestrator.js'
+import CameraController from '@/core/CameraController.js'
+import { PHASE_CONFIG } from '@/config/journeyConfig.js'
 import * as THREE from 'three'
 
 const sceneContainer = ref(null)
@@ -51,6 +53,7 @@ const guideHidden = ref(false)
 let sceneManager = null
 let earthModel = null
 let orchestrator = null
+let cameraController = null
 let animationFrameId = null
 let clock = null
 
@@ -77,9 +80,13 @@ const initScene = () => {
   // Add starfield background
   addStarfield()
 
-  // Position camera for initial view
-  sceneManager.camera.position.set(0, 0, 20000) // 20,000 km from Earth
-  sceneManager.camera.lookAt(0, 0, 0)
+  // Initialize camera controller
+  cameraController = new CameraController(sceneManager.camera)
+
+  // Set initial camera position to first phase starting point
+  const firstPhase = PHASE_CONFIG[0]
+  cameraController.setPosition(firstPhase.cameraStart)
+  console.log('🎥 Camera initialized at:', firstPhase.cameraStart)
 
   // Initialize clock for animations
   clock = new THREE.Clock()
@@ -87,13 +94,27 @@ const initScene = () => {
   // Initialize journey orchestrator
   orchestrator = new JourneyOrchestrator()
 
-  // Listen to phase changes
+  // Listen to journey start - trigger first camera movement
+  orchestrator.on('journey-start', () => {
+    const phase = PHASE_CONFIG[0]
+    console.log(`🎬 Starting journey - moving camera from surface to ${phase.cameraEnd.length()} km`)
+    cameraController.moveTo(phase.cameraEnd, phase.duration)
+  })
+
+  // Listen to phase changes - trigger camera movement for each phase
   orchestrator.on('phase-change', (data) => {
     currentPhase.value = data.currentPhase
+    const phaseConfig = PHASE_CONFIG[data.phaseIndex]
+
+    console.log(`📍 Phase ${data.phaseIndex + 1}: ${data.currentPhase}`)
+    console.log(`🎥 Moving camera to ${phaseConfig.cameraEnd.length()} km over ${phaseConfig.duration / 1000}s`)
+
+    // Trigger camera movement for this phase
+    cameraController.moveTo(phaseConfig.cameraEnd, phaseConfig.duration)
   })
 
   orchestrator.on('journey-complete', () => {
-    console.log('Journey complete!')
+    console.log('🎉 Journey complete!')
   })
 
   // Start the journey
@@ -150,6 +171,11 @@ const animate = () => {
   const deltaTime = clock.getDelta()
   const deltaTimeMs = deltaTime * 1000 // Convert to milliseconds
 
+  // Update camera controller (smooth camera movement)
+  if (cameraController) {
+    cameraController.update(deltaTimeMs)
+  }
+
   // Update journey orchestrator
   if (orchestrator) {
     orchestrator.update(deltaTimeMs)
@@ -182,6 +208,11 @@ const cleanup = () => {
 
   if (orchestrator) {
     orchestrator.dispose()
+  }
+
+  if (cameraController) {
+    // Camera controller doesn't need disposal, just clear reference
+    cameraController = null
   }
 
   if (earthModel) {
