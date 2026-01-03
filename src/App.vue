@@ -1,27 +1,42 @@
+<!-- src/App.vue -->
 <template>
   <div id="godview-app">
-    <h1>GodViewActivation</h1>
-    <p>Overview Effect Journey - Coming Soon</p>
+    <PrimingScreen
+      v-if="showPriming"
+      @ready="handlePrimingComplete"
+    />
+    <div v-else class="journey-placeholder">
+      <p>Journey will start here...</p>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import PrimingScreen from './components/PrimingScreen.vue'
 
-onMounted(() => {
-  console.log('GodViewActivation initialized')
-})
+const showPriming = ref(true)
+
+const handlePrimingComplete = () => {
+  showPriming.value = false
+  console.log('Priming complete, starting journey...')
+}
 </script>
 
-<style scoped>
+<style>
 #godview-app {
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
+}
+
+.journey-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(to bottom, #000000, #0a0a1a);
-  color: #e0e0e0;
+  background: #000;
+  color: #fff;
 }
 </style>
