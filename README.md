@@ -20,6 +20,66 @@ npm run build    # type-check + production build
 
 Requires Node 20.x. Built with Three.js + TypeScript + Vite; no backend — deploys as a static site.
 
+## Deployment (Docker on Ubuntu 22.04)
+
+After `npm run build` the app is pure static files, so the production container serves them with **nginx** — no Node.js at runtime. The multi-stage `Dockerfile` uses Node only to build; the final image is nginx + ~2MB of assets.
+
+### 1. Install Docker (once per server)
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# optional: run docker without sudo (log out and back in afterwards)
+sudo usermod -aG docker $USER
+```
+
+### 2. Deploy
+
+```bash
+git clone <your-repo-url> godviewactivation
+cd godviewactivation
+docker compose up -d --build
+```
+
+The site is now on port 80: `http://<server-ip>/`. The container restarts automatically on reboot (`restart: unless-stopped`).
+
+**Update to a new version:**
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+**Logs / status / stop:**
+
+```bash
+docker compose logs -f
+docker compose ps
+docker compose down
+```
+
+### HTTPS
+
+For a public domain, put a TLS proxy in front (e.g. [Caddy](https://caddyserver.com/) with automatic Let's Encrypt, or nginx + certbot on the host) and forward to the container's port 80. Change the published port in `docker-compose.yml` (e.g. `"8080:80"`) if 80 is taken by the proxy.
+
+### Without Docker (alternative)
+
+Any static file server works — there is no server-side code:
+
+```bash
+npm ci && npm run build   # produces dist/
+sudo apt-get install -y nginx
+sudo cp -r dist/* /var/www/html/
+```
+
 ## Credits & licensing
 
 - Earth textures by [Solar System Scope](https://www.solarsystemscope.com/textures/), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on NASA imagery.

@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npx vitest run tests/<file>.test.ts` — run a single test file
 - `npm run build` — type-check (`tsc --noEmit`) then production build
 - `npm run preview` — serve the production build
+- `docker compose up -d --build` — production deploy (multi-stage: Node builds, nginx serves; no Node at runtime). See README for Ubuntu setup.
 
 Toolchain note: this machine runs Node 20.17, so Vite is pinned to v6 and Vitest to v3 (v7+/v4+ require Node ≥20.19). Don't bump those majors without a Node upgrade.
 
