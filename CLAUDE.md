@@ -2,46 +2,43 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository State
+## Commands
 
-This is a **greenfield rebuild (V2.0)**. The working tree contains no application code yet — only `docs/PRD.md`, which is the single source of truth for what to build. The previous v1 implementation was intentionally removed; do not reference or resurrect it. All new work happens on the `V2.0` branch.
+- `npm run dev` — Vite dev server
+- `npm test` — run the Vitest suite once (`npm run test:watch` for watch mode)
+- `npx vitest run tests/<file>.test.ts` — run a single test file
+- `npm run build` — type-check (`tsc --noEmit`) then production build
+- `npm run preview` — serve the production build
 
-There is no build system, package.json, or test runner yet. When scaffolding the project, the PRD specifies **Three.js + Vite + TypeScript** as the intended stack (see PRD §14.2). Once tooling exists, update this file with the actual build/test/dev commands.
+Toolchain note: this machine runs Node 20.17, so Vite is pinned to v6 and Vitest to v3 (v7+/v4+ require Node ≥20.19). Don't bump those majors without a Node upgrade.
 
 ## What This Product Is
 
-GodViewActivation is a free, browser-based **psychological intervention platform** — not a space simulator. Its sole purpose is to trigger the "Overview Effect" (awe, interconnectedness, perspective shift) via a 7–10 minute guided journey viewing Earth from space. The primary success metric is ≥60% of users reporting awe indicators, not engagement or visual fidelity for its own sake.
+A free, browser-based experience that triggers the "Overview Effect": the visitor **freely explores Earth from orbit**, then presses a **GodView** button that shifts the whole experience into an awe moment. This V2 vision (exploration + toggle) **supersedes the guided-journey model described in `docs/PRD.md`** — see the header note there and `docs/plans/2026-07-02-godview-v2-design.md` for the validated design.
 
-Read `docs/PRD.md` before implementing any feature. Key design constraints that shape all code decisions:
+Stack: Vite + TypeScript + Three.js, **no UI framework** (overlays are plain DOM/CSS in `src/ui/`). Client-side only; deploys as a static site.
 
-- **Journey-first, not exploration-first**: the camera follows a locked, spline-based path through 4 phases — Ascent (0–2m), Transition (2–4m), Contemplation (4–7m), Integration (7–10m). User control is deliberately removed during the journey ("reduced agency enhances awe").
-- **Precisely timed orchestration**: narration fires at 2:30, 4:00, 6:00, 8:30; stillness moments (camera locked, inputs disabled) at 2:00 and 5:00 for 30s each; a strategic 3-second audio silence at 2:00. Audio/visual sync must be within 0.5s.
-- **Psychoacoustic audio**: continuously playing binaural alpha beats (two Web Audio oscillators at 200/210 Hz, ~5% volume, stereo-separated), ambient loop (~30% volume), narration (~70% volume).
-- **Client-side only**: no backend, no accounts, no cookies. Static hosting (Vercel/Netlify). Reflections are stored in localStorage only and never transmitted. Analytics are anonymous (Plausible) and opt-out-able.
-- **No progress bar or timer during the journey** (prevents clock-watching); UI fades to invisible after 5s of inactivity.
+## Architecture
 
-## Anti-Features (Never Implement)
+The single load-bearing idea: `src/godview/GodViewMode.ts` is a state machine (`exploring → transitioning → godview → returning`) and the **sole owner of app mode**. Everything reacts to its events (`enterStart`, `settled`, `exitStart`, `returned`); nothing else mutates mode. `src/main.ts` subscribes the four subsystems to those events:
 
-The PRD explicitly forbids: gamification (points/achievements), social media integration during the journey, user accounts/login, real-time multiplayer, advertising/monetization, and any data collection beyond anonymous analytics.
+1. **Camera** — `src/camera/GodViewTransition.ts` flies to `computeHeroPosition()` (55° off the sun axis so the terminator and atmospheric rim are in frame) via `sphericalLerp` (slerp direction, lerp radius — never through the globe). `ExploreControls` (OrbitControls) is disabled during flights; critically, `controls.update()` must NOT be called outside the `exploring` state because OrbitControls repositions the camera every update.
+2. **Audio** — gain *decisions* are pure functions in `src/audio/audioParams.ts` (tested); `AudioEngine.ts` is untested Web Audio plumbing that applies them. Ambience is procedurally synthesized (drones + noise + LFO) unless `public/audio/ambient.mp3` exists, which overrides it. Binaural pair: 200 Hz left / 210 Hz right = 10 Hz alpha beat, audible only in godview mood. The engine must start after a user gesture — the welcome screen's Begin click.
+3. **Grading** — `SceneManager.setExposure()` (ACES tone mapping; the Earth shader includes the tonemapping chunk so exposure affects it) + `Earth.setAtmosphereIntensity()` ramp up in godview.
+4. **UI** — `Hud` hides completely during godview; exit is ESC, tap/click on the canvas, or the Return button after the HUD reappears.
 
-## Performance & Compatibility Budgets
+`SUN_DIRECTION` in `src/scene/Lighting.ts` is shared by the directional light, the Earth day/night shader, and the hero-position math — change it in one place only.
 
-These are P0 requirements, not aspirations — design with them in mind from the start:
+## Testing Split
 
-- 60 FPS desktop / 30+ FPS mobile; auto-downgrade quality (texture → geometry → starfield) if avg FPS <30 for 10s
-- Page load <3s on 4G via progressive loading: low-res Earth (1K) + renderer first (<2s), 8K textures swap in from background with no visual interruption
-- Memory <500MB desktop / <200MB mobile; total assets <50MB
-- Earth sphere: 128 segments / 8K textures desktop, 64 segments / 4K mobile
-- Browsers: Chrome 90+, Firefox 90+, Safari 15+, Edge 90+; feature-detect WebGL and Web Audio with fallbacks
-- Accessibility: WCAG 2.1 AA (4.5:1 contrast, keyboard nav, ARIA labels, subtitles on by default)
+Logic (state machine, tween, quotes, camera math, gain targets) is TDD'd in `tests/` and runs in Node (three.js math works without a DOM). Rendering and Web Audio glue (`SceneManager`, `Earth` shaders, `AudioEngine`, `src/ui/`) is deliberately untested — verify it in the browser. Keep new logic in pure modules so it stays testable.
 
-## Visual Rendering Notes
+## Assets & Licensing
 
-- Earth has three layers: solid sphere, animated cloud layer, atmosphere glow (custom shader, blue-white gradient RGB 0.3/0.6/1.0, intensity varies with camera distance)
-- **No political borders** — only natural features; the thin blue atmosphere line is a deliberate "fragility trigger"
-- Golden-hour lighting: directional light at 3500K with strong atmospheric rim light, minimal ambient
-- Textures come from NASA public-domain datasets
+`public/textures/` are from Solar System Scope, **CC BY 4.0 — attribution required** (kept in README; don't remove it). 2K set loads first for fast first paint; the 8K set swaps in silently in the background (`Earth.load`). Total assets must stay <50MB.
 
-## MVP Scope Guard
+## Product Constraints
 
-MVP (v1.0) includes only: the 4-phase journey, Earth rendering, psychoacoustic audio, priming screen, stillness controller, reflection screen, responsive design, basic accessibility, and anonymous analytics. VR/WebXR, free exploration mode, multi-language, meditation mode, and sharing are explicitly **post-MVP** — don't build them yet (PRD §4.1, §9).
+- Never implement: gamification, accounts/login, ads, data collection, social features during the experience.
+- No progress bars or timers in the experience; UI fades when idle.
+- Performance budgets: 60 FPS desktop / 30+ mobile; <3s first paint on 4G (2K textures); mobile gets 64-segment spheres and no 8K (`detectQuality`).

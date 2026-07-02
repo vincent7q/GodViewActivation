@@ -1,3 +1,6 @@
+ > [!IMPORTANT]
+> **Scope change (July 2, 2026):** The V2 build implements **free exploration + a GodView toggle**, not the locked 7–10 minute guided journey described below. Narration voice clips, the stillness controller, reflection screens, and analytics are out of the MVP. See `docs/plans/2026-07-02-godview-v2-design.md` for the validated design. This document is retained for the product research, personas, performance budgets, and anti-features, which still apply.
+
 # Product Requirements Document (PRD)
 ## GodViewActivation - Overview Effect Activation Platform
 

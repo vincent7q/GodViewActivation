@@ -24,8 +24,8 @@ export class SceneManager {
   readonly camera: THREE.PerspectiveCamera;
   readonly quality: QualitySettings;
 
-  private readonly clock = new THREE.Clock();
   private readonly updatables: UpdateFn[] = [];
+  private lastFrameTime: number | null = null;
 
   constructor(canvas: HTMLCanvasElement, quality: QualitySettings = detectQuality()) {
     this.quality = quality;
@@ -55,10 +55,11 @@ export class SceneManager {
   }
 
   start(): void {
-    this.renderer.setAnimationLoop(() => {
-      const dt = Math.min(this.clock.getDelta(), 0.1);
-      const elapsed = this.clock.elapsedTime;
-      for (const fn of this.updatables) fn(dt, elapsed);
+    this.renderer.setAnimationLoop((timeMs) => {
+      const dt =
+        this.lastFrameTime === null ? 0 : Math.min((timeMs - this.lastFrameTime) / 1000, 0.1);
+      this.lastFrameTime = timeMs;
+      for (const fn of this.updatables) fn(dt, timeMs / 1000);
       this.renderer.render(this.scene, this.camera);
     });
   }
