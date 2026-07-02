@@ -3,7 +3,6 @@ import * as THREE from 'three';
 export interface QualitySettings {
   sphereSegments: number;
   maxPixelRatio: number;
-  highResTextures: boolean;
   starCount: number;
 }
 
@@ -12,8 +11,8 @@ export function detectQuality(): QualitySettings {
     /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
   return isMobile
-    ? { sphereSegments: 64, maxPixelRatio: 1.5, highResTextures: false, starCount: 4000 }
-    : { sphereSegments: 128, maxPixelRatio: 2, highResTextures: true, starCount: 8000 };
+    ? { sphereSegments: 64, maxPixelRatio: 1.5, starCount: 4000 }
+    : { sphereSegments: 128, maxPixelRatio: 2, starCount: 8000 };
 }
 
 export type UpdateFn = (dt: number, elapsed: number) => void;

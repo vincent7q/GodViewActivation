@@ -128,23 +128,14 @@ export class Earth {
     this.group.rotation.y = Math.random() * Math.PI * 2;
   }
 
-  /** Loads the 2K set (awaited — scene is ready when this resolves), then
-   *  silently swaps in the 8K set in the background when allowed. */
-  async load(highRes: boolean): Promise<void> {
+  /** Loads the texture set; the scene is ready when this resolves. */
+  async load(): Promise<void> {
     const [day, night, clouds] = await Promise.all([
       this.loadColorTexture('/textures/2k_earth_daymap.jpg'),
       this.loadColorTexture('/textures/2k_earth_nightmap.jpg'),
       this.loader.loadAsync('/textures/2k_earth_clouds.jpg'),
     ]);
     this.applyTextures(day, night, clouds);
-
-    if (highRes) {
-      void Promise.all([
-        this.loadColorTexture('/textures/8k_earth_daymap.jpg'),
-        this.loadColorTexture('/textures/8k_earth_nightmap.jpg'),
-        this.loader.loadAsync('/textures/8k_earth_clouds.jpg'),
-      ]).then(([hiDay, hiNight, hiClouds]) => this.applyTextures(hiDay, hiNight, hiClouds));
-    }
   }
 
   update(dt: number): void {

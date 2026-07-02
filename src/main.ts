@@ -33,7 +33,7 @@ async function bootstrap(): Promise<void> {
 
   const earth = new Earth(quality.sphereSegments);
   manager.scene.add(earth.group);
-  await earth.load(quality.highResTextures);
+  await earth.load();
 
   const controls = new ExploreControls(manager.camera, canvas);
   const transition = new GodViewTransition(manager.camera);

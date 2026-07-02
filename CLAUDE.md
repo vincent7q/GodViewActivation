@@ -35,10 +35,10 @@ Logic (state machine, tween, quotes, camera math, gain targets) is TDD'd in `tes
 
 ## Assets & Licensing
 
-`public/textures/` are from Solar System Scope, **CC BY 4.0 — attribution required** (kept in README; don't remove it). 2K set loads first for fast first paint; the 8K set swaps in silently in the background (`Earth.load`). Total assets must stay <50MB.
+`public/textures/` are from Solar System Scope, **CC BY 4.0 — attribution required** (kept in README; don't remove it). Textures are the 2K set only (~1.6MB) — a deliberate product decision; don't add higher resolutions without asking. Total assets must stay <50MB.
 
 ## Product Constraints
 
 - Never implement: gamification, accounts/login, ads, data collection, social features during the experience.
 - No progress bars or timers in the experience; UI fades when idle.
-- Performance budgets: 60 FPS desktop / 30+ mobile; <3s first paint on 4G (2K textures); mobile gets 64-segment spheres and no 8K (`detectQuality`).
+- Performance budgets: 60 FPS desktop / 30+ mobile; <3s first paint on 4G (2K textures); mobile gets 64-segment spheres and fewer stars (`detectQuality`).
