@@ -1,24 +1,4 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
-
-/.vs/GodViewActivation.slnx/FileContentIndex
-/.vs
-
-# Node.js dependencies
 node_modules/
-
-# Build output
 dist/
-
-# OS files
+*.local
 .DS_Store
-
-# Logs
-*.log
-
-# Environment files
-.env
-
-# IDE
-.vscode/

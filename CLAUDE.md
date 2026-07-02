@@ -2,115 +2,46 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Repository State
 
-GodViewActivation is a web-based space tourism application that simulates viewing Earth from space to evoke the "Overview Effect" - a cognitive shift characterized by awe, interconnectedness, and responsibility toward Earth. The application supports both VR mode (via WebXR) and standard web browser mode.
+This is a **greenfield rebuild (V2.0)**. The working tree contains no application code yet — only `docs/PRD.md`, which is the single source of truth for what to build. The previous v1 implementation was intentionally removed; do not reference or resurrect it. All new work happens on the `V2.0` branch.
 
-**Target Platforms**: Chrome 90+, Edge 90+, Firefox 90+, Safari 15+, VR headsets via WebXR
-**Deployment**: Static web app (no backend), hosted via HTTPS for WebXR support
+There is no build system, package.json, or test runner yet. When scaffolding the project, the PRD specifies **Three.js + Vite + TypeScript** as the intended stack (see PRD §14.2). Once tooling exists, update this file with the actual build/test/dev commands.
 
-## Technology Stack
+## What This Product Is
 
-- **Frontend**: HTML5, JavaScript/TypeScript
-- **3D Rendering**: Three.js (3D models, camera controls, textures)
-- **VR Integration**: WebXR API
-- **Audio**: Web Audio API
-- **Deployment**: Static hosting (Vercel, Netlify, or GitHub Pages)
+GodViewActivation is a free, browser-based **psychological intervention platform** — not a space simulator. Its sole purpose is to trigger the "Overview Effect" (awe, interconnectedness, perspective shift) via a 7–10 minute guided journey viewing Earth from space. The primary success metric is ≥60% of users reporting awe indicators, not engagement or visual fidelity for its own sake.
 
-## Architecture Principles
+Read `docs/PRD.md` before implementing any feature. Key design constraints that shape all code decisions:
 
-### Modular Structure
-The codebase should be organized into separate modules:
-- **Controls Module**: Handles mouse, keyboard, touch, and VR controller inputs
-- **Rendering Module**: Manages Three.js scene, Earth model, space environment, camera
-- **UI Module**: HUD overlay, menu system, settings, accessibility features
-- **Audio Module**: Ambient sounds, narration, background music management
-- **VR Module**: WebXR integration, headset detection, VR-specific controls
+- **Journey-first, not exploration-first**: the camera follows a locked, spline-based path through 4 phases — Ascent (0–2m), Transition (2–4m), Contemplation (4–7m), Integration (7–10m). User control is deliberately removed during the journey ("reduced agency enhances awe").
+- **Precisely timed orchestration**: narration fires at 2:30, 4:00, 6:00, 8:30; stillness moments (camera locked, inputs disabled) at 2:00 and 5:00 for 30s each; a strategic 3-second audio silence at 2:00. Audio/visual sync must be within 0.5s.
+- **Psychoacoustic audio**: continuously playing binaural alpha beats (two Web Audio oscillators at 200/210 Hz, ~5% volume, stereo-separated), ambient loop (~30% volume), narration (~70% volume).
+- **Client-side only**: no backend, no accounts, no cookies. Static hosting (Vercel/Netlify). Reflections are stored in localStorage only and never transmitted. Analytics are anonymous (Plausible) and opt-out-able.
+- **No progress bar or timer during the journey** (prevents clock-watching); UI fades to invisible after 5s of inactivity.
 
-### Performance Requirements
-- **Target**: 60 FPS rendering
-- **Progressive Loading**: Low-res Earth textures first, then high-res
-- **Fallback Strategy**: WebGL preferred → Canvas 2D fallback if WebGL unavailable
-- **Optimization**: Detect device capabilities and adjust graphics quality automatically
-- **Mobile**: Responsive design with performance optimizations (reduced resolution on mobile)
+## Anti-Features (Never Implement)
 
-### Visual Fidelity Standards
-- **Earth Textures**: High-resolution, photorealistic (NASA Blue Marble/Visible Earth datasets)
-- **Atmosphere**: Glow effects, clouds, weather patterns
-- **Space Environment**: Procedural starfield, Moon, Sun with lens flare
-- **Style**: Photorealism over cartoonish; emphasize Earth's isolation and beauty
+The PRD explicitly forbids: gamification (points/achievements), social media integration during the journey, user accounts/login, real-time multiplayer, advertising/monetization, and any data collection beyond anonymous analytics.
 
-## Control Schemes
+## Performance & Compatibility Budgets
 
-### Normal Browser Mode
-- **Mouse**: Left-drag (rotate), wheel (zoom), right-drag (pan/fly)
-- **Keyboard**: WASD (movement), Spacebar/Shift (ascend/descend), arrows (fine rotation)
-- **Touch**: Pinch-to-zoom, drag (rotate), two-finger drag (pan)
+These are P0 requirements, not aspirations — design with them in mind from the start:
 
-### VR Mode
-- **Headset**: Natural rotation via head tracking
-- **Controllers**: Triggers (zoom), joysticks (flying/movement)
+- 60 FPS desktop / 30+ FPS mobile; auto-downgrade quality (texture → geometry → starfield) if avg FPS <30 for 10s
+- Page load <3s on 4G via progressive loading: low-res Earth (1K) + renderer first (<2s), 8K textures swap in from background with no visual interruption
+- Memory <500MB desktop / <200MB mobile; total assets <50MB
+- Earth sphere: 128 segments / 8K textures desktop, 64 segments / 4K mobile
+- Browsers: Chrome 90+, Firefox 90+, Safari 15+, Edge 90+; feature-detect WebGL and Web Audio with fallbacks
+- Accessibility: WCAG 2.1 AA (4.5:1 contrast, keyboard nav, ARIA labels, subtitles on by default)
 
-### General Controls
-- Smooth transitions with inertia-based movement for "weightless" feel
-- Speed controls (slider/buttons) for adjustable flying speed
-- Reset button to return to default orbital view
+## Visual Rendering Notes
 
-## Key Features to Implement
+- Earth has three layers: solid sphere, animated cloud layer, atmosphere glow (custom shader, blue-white gradient RGB 0.3/0.6/1.0, intensity varies with camera distance)
+- **No political borders** — only natural features; the thin blue atmosphere line is a deliberate "fragility trigger"
+- Golden-hour lighting: directional light at 3500K with strong atmospheric rim light, minimal ambient
+- Textures come from NASA public-domain datasets
 
-### Core Experience
-1. **Dual Mode Support**: VR (WebXR) and normal browser mode with automatic headset detection
-2. **Earth Representation**: Day/night cycle (real-time or simulated), atmospheric effects
-3. **Audio System**: Ambient space sounds, optional astronaut narration, calming background music
-4. **UI/HUD**: Mode selector, control hints, zoom indicator, settings menu
+## MVP Scope Guard
 
-### Enhancement Features (Post-MVP)
-- Guided tours with pre-set flight paths and narration
-- Educational overlays (facts, environmental stats)
-- Multi-view options (Mars, Moon comparisons)
-- Meditation mode with slow-motion flying
-- Screenshot/sharing features
-- Real-time weather data integration (OpenWeatherMap API)
-- User customization (starting positions)
-- Progression system (achievements)
-- Voice controls via Web Speech API
-- Post-experience survey for Overview Effect feedback
-
-## Development Guidelines
-
-### Code Organization
-- Use modular, reusable components
-- Separate concerns: rendering logic, input handling, UI, audio
-- TypeScript preferred for type safety
-- Inline comments for complex Three.js/WebXR interactions
-
-### Browser Compatibility
-- Test across Chrome, Edge (with IE fallback via polyfills), Firefox, Safari
-- Ensure WebXR works on compatible headsets (Oculus Quest, HTC Vive)
-- Implement feature detection for WebXR, WebGL, Web Audio API
-
-### Assets and Resources
-- Use public domain Earth textures (NASA datasets)
-- Royalty-free or generated audio tracks
-- Optimize asset loading (progressive/lazy loading)
-
-### Testing Strategy
-- Unit tests for control input handlers
-- Browser compatibility tests across target platforms
-- Performance profiling to maintain 60 FPS
-- VR testing on actual headsets
-
-### Security and Privacy
-- No user data collection
-- All processing client-side
-- HTTPS required for WebXR API access
-
-## Project Status
-
-This is an early-stage project. The README.md contains comprehensive requirements. Implementation should start with an MVP focusing on:
-1. Basic Three.js scene with Earth model
-2. Camera controls (mouse/keyboard)
-3. WebGL rendering pipeline
-4. Simple UI overlay
-
-Then iterate toward VR support, enhanced visuals, and optional features.
+MVP (v1.0) includes only: the 4-phase journey, Earth rendering, psychoacoustic audio, priming screen, stillness controller, reflection screen, responsive design, basic accessibility, and anonymous analytics. VR/WebXR, free exploration mode, multi-language, meditation mode, and sharing are explicitly **post-MVP** — don't build them yet (PRD §4.1, §9).

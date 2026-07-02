@@ -12,7 +12,9 @@
       "Bash(npm run server:dev:*)",
       "Bash(npm test)",
       "Bash(npm test:*)",
-      "Skill(superpowers:executing-plans)"
+      "Skill(superpowers:executing-plans)",
+      "Bash(git -C \"C:/Users/vincent/source/GodViewActivation\" show HEAD:CLAUDE.md)",
+      "Bash(git -C \"C:/Users/vincent/source/GodViewActivation\" branch -a)"
     ]
   }
 }
