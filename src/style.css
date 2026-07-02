@@ -37,3 +37,169 @@ body {
 #ui-root > * {
   pointer-events: auto;
 }
+
+/* ---------- Welcome / priming screen ---------- */
+
+.welcome {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #060b18 0%, #000 75%);
+  opacity: 1;
+  transition: opacity 2s ease;
+  z-index: 10;
+}
+
+.welcome-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.welcome-inner {
+  max-width: 34rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.welcome-inner h1 {
+  font-size: 2.4rem;
+  font-weight: 200;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  margin-bottom: 1.6rem;
+}
+
+.welcome-inner p {
+  margin-bottom: 1rem;
+  line-height: 1.7;
+  color: var(--ui-fg-dim);
+}
+
+.welcome-lead {
+  font-size: 1.15rem;
+  color: var(--ui-fg) !important;
+}
+
+.welcome-hint {
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.welcome-start {
+  margin-top: 1.4rem;
+  padding: 0.8rem 2.6rem;
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ui-fg);
+  background: transparent;
+  border: 1px solid var(--ui-accent);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 300ms ease, box-shadow 300ms ease;
+}
+
+.welcome-start:hover,
+.welcome-start:focus-visible {
+  background: rgba(120, 180, 255, 0.12);
+  box-shadow: 0 0 24px rgba(120, 180, 255, 0.25);
+  outline: none;
+}
+
+/* ---------- HUD ---------- */
+
+.hud {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  opacity: 1;
+  transition: opacity 1.2s ease;
+}
+
+.hud-idle {
+  opacity: 0;
+}
+
+.hud-gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hud button {
+  color: var(--ui-fg);
+  background: var(--ui-bg);
+  border: 1px solid rgba(120, 180, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: border-color 300ms ease, box-shadow 300ms ease;
+}
+
+.hud button:hover,
+.hud button:focus-visible {
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 18px rgba(120, 180, 255, 0.3);
+  outline: none;
+}
+
+.hud-godview {
+  padding: 0.75rem 1.8rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hud-mute {
+  width: 2.8rem;
+  height: 2.8rem;
+  font-size: 1.1rem;
+}
+
+/* ---------- Quote overlay ---------- */
+
+.quote {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  transform: translateX(-50%);
+  max-width: 42rem;
+  padding: 0 1.5rem;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 2.5s ease;
+  pointer-events: none !important;
+}
+
+.quote-visible {
+  opacity: 1;
+}
+
+.quote-text {
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1.6;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
+}
+
+.quote-author {
+  margin-top: 0.8rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  color: var(--ui-fg-dim);
+}
+
+@media (max-width: 640px) {
+  .quote-text {
+    font-size: 1.15rem;
+  }
+
+  .welcome-inner h1 {
+    font-size: 1.7rem;
+  }
+}
