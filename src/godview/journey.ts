@@ -1,6 +1,8 @@
 import * as THREE from 'three';
+import { sphericalLerp } from '../camera/GodViewTransition';
 import { EARTH_ROTATION_SPEED } from '../scene/Earth';
 import { TOUR_COUNTRIES, latLonToWorld } from './countries';
+import { easeInOutCubic } from './tween';
 
 export const SKIM_RADIUS = 1.3;
 export const DOT_RADIUS = 55;
@@ -63,4 +65,60 @@ export function buildJourney(
   add('hold', HOLD_SECONDS, outward.clone().multiplyScalar(DOT_RADIUS));
 
   return phases;
+}
+
+export interface JourneyCallbacks {
+  /** Fires as each phase begins (including the first, on the first update). */
+  onPhase?: (phase: JourneyPhase) => void;
+  onComplete?: () => void;
+}
+
+// Frame-driven playback: call update(dt) each frame and copy the returned
+// position onto the camera. Null once the journey is over or stopped.
+export class JourneyPlayer {
+  private phaseIndex = -1;
+  private phaseElapsed = 0;
+  private done = false;
+  private readonly position = new THREE.Vector3();
+
+  constructor(
+    private readonly phases: JourneyPhase[],
+    private readonly callbacks: JourneyCallbacks = {},
+  ) {}
+
+  get active(): boolean {
+    return !this.done;
+  }
+
+  update(dt: number): THREE.Vector3 | null {
+    if (this.done) return null;
+    if (this.phaseIndex === -1) this.enterPhase(0);
+
+    this.phaseElapsed += dt;
+    while (this.phaseElapsed >= this.phases[this.phaseIndex].duration) {
+      if (this.phaseIndex === this.phases.length - 1) {
+        this.position.copy(this.phases[this.phaseIndex].to);
+        this.done = true;
+        this.callbacks.onComplete?.();
+        return this.position;
+      }
+      this.phaseElapsed -= this.phases[this.phaseIndex].duration;
+      this.enterPhase(this.phaseIndex + 1);
+    }
+
+    const phase = this.phases[this.phaseIndex];
+    const t = phase.duration === 0 ? 1 : this.phaseElapsed / phase.duration;
+    this.position.copy(sphericalLerp(phase.from, phase.to, easeInOutCubic(t)));
+    return this.position;
+  }
+
+  /** User exit: abandon playback (the return flight is flown elsewhere). */
+  stop(): void {
+    this.done = true;
+  }
+
+  private enterPhase(index: number): void {
+    this.phaseIndex = index;
+    this.callbacks.onPhase?.(this.phases[index]);
+  }
 }
