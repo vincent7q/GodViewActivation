@@ -82,6 +82,6 @@ sudo cp -r dist/* /var/www/html/
 
 ## Credits & licensing
 
-- Earth textures by [Solar System Scope](https://www.solarsystemscope.com/textures/), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on NASA imagery.
+- Earth, Sun, and planet textures (2K set plus the 8K Earth day map) by [Solar System Scope](https://www.solarsystemscope.com/textures/), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on NASA imagery.
 - Astronaut quotes: Carl Sagan, Edgar Mitchell, William Anders, Aleksei Leonov.
 - Ambience and binaural audio are synthesized in-browser with the Web Audio API.
