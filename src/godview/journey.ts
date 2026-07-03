@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { sphericalLerp } from '../camera/GodViewTransition';
 import { EARTH_ROTATION_SPEED } from '../scene/Earth';
+import { SUN_DIRECTION } from '../scene/Lighting';
 import { TOUR_COUNTRIES, latLonToWorld } from './countries';
 import { easeInOutCubic } from './tween';
 
@@ -12,9 +13,21 @@ export const DWELL_SECONDS = 3;
 export const LEG_SECONDS = 5;
 export const ASCEND_SILENT_SECONDS = 12;
 export const ASCEND_QUOTE_SECONDS = 18;
-export const HOLD_SECONDS = 15;
+export const HOLD_SECONDS = 8;
+export const REVEAL_SECONDS = 22;
+export const REVEAL_RADIUS = 250;
+const REVEAL_LOOK_LANDSCAPE = 120;
+const REVEAL_LOOK_PORTRAIT = 35;
+const UP = new THREE.Vector3(0, 1, 0);
 
-export type JourneyPhaseKind = 'descend' | 'dwell' | 'leg' | 'ascend' | 'ascend-quote' | 'hold';
+export type JourneyPhaseKind =
+  | 'descend'
+  | 'dwell'
+  | 'leg'
+  | 'ascend'
+  | 'ascend-quote'
+  | 'hold'
+  | 'reveal';
 
 export interface JourneyPhase {
   kind: JourneyPhaseKind;
@@ -23,6 +36,27 @@ export interface JourneyPhase {
   duration: number;
   from: THREE.Vector3;
   to: THREE.Vector3;
+  /** Optional: the camera's look target eases here during this phase
+   *  (default: keep looking at the origin). */
+  lookTo?: THREE.Vector3;
+}
+
+// Side-on vantage, slightly lifted: Earth low-center, sun glare off-axis,
+// the planet arc strung between them.
+export function computeRevealPosition(): THREE.Vector3 {
+  return new THREE.Vector3()
+    .crossVectors(SUN_DIRECTION, UP)
+    .normalize()
+    .addScaledVector(UP, 0.18)
+    .normalize()
+    .multiplyScalar(REVEAL_RADIUS);
+}
+
+// Landscape frames Earth AND the sun; portrait can't fit both (half-hfov
+// ~13°), so it stays near Earth and lets the sun's glow bleed in.
+export function computeRevealLook(aspect: number): THREE.Vector3 {
+  const distance = aspect >= 1 ? REVEAL_LOOK_LANDSCAPE : REVEAL_LOOK_PORTRAIT;
+  return SUN_DIRECTION.clone().multiplyScalar(distance);
 }
 
 // The outbound timeline: descend → country flyover → ascend → dot hold.
@@ -32,6 +66,7 @@ export interface JourneyPhase {
 export function buildJourney(
   startPosition: THREE.Vector3,
   surfaceRotationY: number,
+  aspect: number,
 ): JourneyPhase[] {
   const phases: JourneyPhase[] = [];
   let elapsed = 0;
@@ -41,10 +76,11 @@ export function buildJourney(
     kind: JourneyPhaseKind,
     duration: number,
     to: THREE.Vector3,
-    country?: string,
+    extras: { country?: string; lookTo?: THREE.Vector3 } = {},
   ): void => {
     const phase: JourneyPhase = { kind, duration, from: cursor.clone(), to: to.clone() };
-    if (country !== undefined) phase.country = country;
+    if (extras.country !== undefined) phase.country = extras.country;
+    if (extras.lookTo !== undefined) phase.lookTo = extras.lookTo.clone();
     phases.push(phase);
     cursor = to.clone();
     elapsed += duration;
@@ -56,13 +92,14 @@ export function buildJourney(
     const arrivalRotation = surfaceRotationY + EARTH_ROTATION_SPEED * (elapsed + travel);
     const waypoint = latLonToWorld(lat, lon, arrivalRotation, SKIM_RADIUS);
     add(i === 0 ? 'descend' : 'leg', travel, waypoint);
-    add('dwell', DWELL_SECONDS, waypoint, name);
+    add('dwell', DWELL_SECONDS, waypoint, { country: name });
   }
 
   const outward = cursor.clone().normalize();
   add('ascend', ASCEND_SILENT_SECONDS, outward.clone().multiplyScalar(ASCEND_MIDPOINT_RADIUS));
   add('ascend-quote', ASCEND_QUOTE_SECONDS, outward.clone().multiplyScalar(DOT_RADIUS));
   add('hold', HOLD_SECONDS, outward.clone().multiplyScalar(DOT_RADIUS));
+  add('reveal', REVEAL_SECONDS, computeRevealPosition(), { lookTo: computeRevealLook(aspect) });
 
   return phases;
 }
@@ -80,6 +117,8 @@ export class JourneyPlayer {
   private phaseElapsed = 0;
   private done = false;
   private readonly position = new THREE.Vector3();
+  private readonly look = new THREE.Vector3(0, 0, 0);
+  private readonly lookStart = new THREE.Vector3(0, 0, 0);
 
   constructor(
     private readonly phases: JourneyPhase[],
@@ -90,6 +129,11 @@ export class JourneyPlayer {
     return !this.done;
   }
 
+  /** Where the camera should look this frame (origin except look-to phases). */
+  get lookTarget(): THREE.Vector3 {
+    return this.look;
+  }
+
   update(dt: number): THREE.Vector3 | null {
     if (this.done) return null;
     if (this.phaseIndex === -1) this.enterPhase(0);
@@ -97,7 +141,9 @@ export class JourneyPlayer {
     this.phaseElapsed += dt;
     while (this.phaseElapsed >= this.phases[this.phaseIndex].duration) {
       if (this.phaseIndex === this.phases.length - 1) {
-        this.position.copy(this.phases[this.phaseIndex].to);
+        const last = this.phases[this.phaseIndex];
+        this.position.copy(last.to);
+        if (last.lookTo) this.look.copy(last.lookTo);
         this.done = true;
         this.callbacks.onComplete?.();
         return this.position;
@@ -109,6 +155,7 @@ export class JourneyPlayer {
     const phase = this.phases[this.phaseIndex];
     const t = phase.duration === 0 ? 1 : this.phaseElapsed / phase.duration;
     this.position.copy(sphericalLerp(phase.from, phase.to, easeInOutCubic(t)));
+    if (phase.lookTo) this.look.lerpVectors(this.lookStart, phase.lookTo, easeInOutCubic(t));
     return this.position;
   }
 
@@ -118,6 +165,7 @@ export class JourneyPlayer {
   }
 
   private enterPhase(index: number): void {
+    this.lookStart.copy(this.look);
     this.phaseIndex = index;
     this.callbacks.onPhase?.(this.phases[index]);
   }
