@@ -36,7 +36,7 @@ Logic (state machine, tween, quotes, camera math, gain targets) is TDD'd in `tes
 
 ## Assets & Licensing
 
-`public/textures/` are from Solar System Scope, **CC BY 4.0 — attribution required** (kept in README; don't remove it). Textures are the 2K set only (~1.6MB) — a deliberate product decision; don't add higher resolutions without asking. Total assets must stay <50MB.
+`public/textures/` are from Solar System Scope, **CC BY 4.0 — attribution required** (kept in README; don't remove it). Startup loads the 2K set (fast first paint, and the only set mobile gets); capable desktops then hot-swap the 8K day map in the background (`Earth.upgradeDayMap`). Sun/planet maps are 2K. Total assets must stay <50MB.
 
 ## Product Constraints
 
