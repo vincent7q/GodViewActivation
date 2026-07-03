@@ -59,6 +59,25 @@ describe('GodViewTransition', () => {
     expect(forward.dot(toOrigin)).toBeGreaterThan(0.999);
   });
 
+  test('blends the look target from lookFrom back to the origin', () => {
+    const camera = new THREE.PerspectiveCamera();
+    camera.position.set(0, 0, 3);
+
+    const transition = new GodViewTransition(camera);
+    transition.flyTo(target, 6, undefined, new THREE.Vector3(0, 0, 100));
+    transition.update(3); // halfway (eased t = 0.5 → look at (0,0,50))
+
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    const toBlended = new THREE.Vector3(0, 0, 50).sub(camera.position).normalize();
+    expect(forward.dot(toBlended)).toBeGreaterThan(0.999);
+
+    for (let i = 0; i < 70; i++) transition.update(0.1); // finish
+    camera.getWorldDirection(forward);
+    const toOrigin = camera.position.clone().negate().normalize();
+    expect(forward.dot(toOrigin)).toBeGreaterThan(0.999);
+  });
+
   test('is inert when no flight is active', () => {
     const camera = new THREE.PerspectiveCamera();
     camera.position.set(1, 2, 3);
