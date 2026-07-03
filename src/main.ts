@@ -7,7 +7,8 @@ import { ExploreControls } from './camera/ExploreControls';
 import { GodViewTransition } from './camera/GodViewTransition';
 import { GodViewMode } from './godview/GodViewMode';
 import { JourneyPlayer, buildJourney, DESCEND_SECONDS } from './godview/journey';
-import { QUOTES, QuoteRotation } from './godview/quotes';
+import { QUOTES, QuoteRotation, REVEAL_QUOTE } from './godview/quotes';
+import { SolarSystem } from './scene/SolarSystem';
 import { Tween } from './godview/tween';
 import { AudioEngine } from './audio/AudioEngine';
 import { showWelcomeScreen } from './ui/WelcomeScreen';
@@ -32,9 +33,21 @@ async function bootstrap(): Promise<void> {
   manager.scene.add(createLighting());
   manager.scene.add(createStarfield(quality.starCount));
 
-  const earth = new Earth(quality.sphereSegments);
+  const anisotropy = Math.min(
+    manager.renderer.capabilities.getMaxAnisotropy(),
+    quality.anisotropyCap,
+  );
+  const earth = new Earth(quality.sphereSegments, anisotropy);
   manager.scene.add(earth.group);
   await earth.load();
+
+  const solar = new SolarSystem();
+  manager.scene.add(solar.group);
+  void solar.load(); // in the background — needed ~100s in, at the reveal
+
+  if (quality.highResDayMap && manager.renderer.capabilities.maxTextureSize >= 8192) {
+    void earth.upgradeDayMap('/textures/8k_earth_daymap.jpg');
+  }
 
   const controls = new ExploreControls(manager.camera, canvas);
   const transition = new GodViewTransition(manager.camera);
@@ -63,6 +76,13 @@ async function bootstrap(): Promise<void> {
   const restorePosition = new THREE.Vector3();
   let journey: JourneyPlayer | null = null;
 
+  const fadeSolar = (to: number, seconds: number): void => {
+    const from = solar.opacity;
+    gradingTweens.push(
+      new Tween(seconds, (v) => solar.setOpacity(THREE.MathUtils.lerp(from, to, v))),
+    );
+  };
+
   mode.on('enterStart', () => {
     restorePosition.copy(manager.camera.position);
     controls.enabled = false;
@@ -70,7 +90,7 @@ async function bootstrap(): Promise<void> {
     audio.setMood('godview');
     rampGrading(GODVIEW_EXPOSURE, GODVIEW_ATMOSPHERE, DESCEND_SECONDS);
     journey = new JourneyPlayer(
-      buildJourney(manager.camera.position, earth.totalSurfaceRotationY),
+      buildJourney(manager.camera.position, earth.totalSurfaceRotationY, manager.camera.aspect),
       {
         onPhase: (phase) => {
           if (phase.kind === 'dwell') {
@@ -78,8 +98,11 @@ async function bootstrap(): Promise<void> {
             mode.notifyTransitionComplete(); // settles on the first dwell; no-op after
           } else if (phase.kind === 'ascend') {
             caption.hide();
-          } else if (phase.kind === 'ascend-quote' || phase.kind === 'hold') {
+          } else if (phase.kind === 'ascend-quote') {
             quoteOverlay.show(quotes.next());
+          } else if (phase.kind === 'reveal') {
+            fadeSolar(1, 4);
+            quoteOverlay.show(REVEAL_QUOTE);
           }
         },
         onComplete: () => mode.requestExit(),
@@ -88,13 +111,16 @@ async function bootstrap(): Promise<void> {
   });
 
   mode.on('exitStart', () => {
+    const lookFrom = journey?.lookTarget.clone();
     journey?.stop();
     journey = null;
     caption.hide();
     quoteOverlay.hide();
     audio.setMood('exploring');
+    // rampGrading clears the tween list, so it must run before fadeSolar.
     rampGrading(1.0, ATMOSPHERE_BASE_INTENSITY, RETURN_SECONDS);
-    transition.flyTo(restorePosition, RETURN_SECONDS, () => mode.notifyTransitionComplete());
+    fadeSolar(0, 3);
+    transition.flyTo(restorePosition, RETURN_SECONDS, () => mode.notifyTransitionComplete(), lookFrom);
   });
 
   mode.on('returned', () => {
@@ -114,10 +140,11 @@ async function bootstrap(): Promise<void> {
   manager.onUpdate((dt) => {
     earth.update(dt);
     if (journey) {
-      const pos = journey.update(dt);
+      const player = journey; // onComplete may null `journey` mid-update
+      const pos = player.update(dt);
       if (pos) {
         manager.camera.position.copy(pos);
-        manager.camera.lookAt(0, 0, 0);
+        manager.camera.lookAt(player.lookTarget);
       }
     }
     transition.update(dt);
