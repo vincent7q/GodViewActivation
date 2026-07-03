@@ -3,16 +3,12 @@ export interface Quote {
   author: string;
 }
 
-// Two are shown per journey — mid-ascend, then at the pale-blue-dot hold —
-// so Sagan's dot quote sits second, landing on the hold beat first time out.
+// Rotation feeds the mid-ascend beat across repeat journeys. The reveal
+// beat has its own fixed line (REVEAL_QUOTE).
 export const QUOTES: Quote[] = [
   {
     text: 'Suddenly, from behind the rim of the Moon, there emerges a sparkling blue and white jewel… home.',
     author: 'Edgar Mitchell, Apollo 14',
-  },
-  {
-    text: 'Look again at that dot. That’s here. That’s home. That’s us.',
-    author: 'Carl Sagan',
   },
   {
     text: 'From out there on the Moon, international politics look so petty.',
@@ -27,6 +23,12 @@ export const QUOTES: Quote[] = [
     author: 'Aleksei Leonov, cosmonaut',
   },
 ];
+
+// The reveal beat's dedicated line — always this one, never rotated.
+export const REVEAL_QUOTE: Quote = {
+  text: 'Look again at that dot. That’s here. That’s home. That’s us.',
+  author: 'Carl Sagan',
+};
 
 export class QuoteRotation {
   private index = 0;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { QUOTES, QuoteRotation } from '../src/godview/quotes';
+import { QUOTES, QuoteRotation, REVEAL_QUOTE } from '../src/godview/quotes';
 
 describe('QUOTES', () => {
   test('contains at least three quotes with text and author', () => {
@@ -8,6 +8,17 @@ describe('QUOTES', () => {
       expect(quote.text.length).toBeGreaterThan(0);
       expect(quote.author.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('REVEAL_QUOTE', () => {
+  test('is Sagan’s dot quote, reserved for the reveal beat', () => {
+    expect(REVEAL_QUOTE.author).toBe('Carl Sagan');
+    expect(REVEAL_QUOTE.text).toContain('Look again at that dot');
+  });
+
+  test('is not also in the rotation', () => {
+    expect(QUOTES.some((q) => q.text === REVEAL_QUOTE.text)).toBe(false);
   });
 });
 
