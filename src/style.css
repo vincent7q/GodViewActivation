@@ -194,7 +194,32 @@ body {
   color: var(--ui-fg-dim);
 }
 
+/* ---------- Country caption (journey flyover) ---------- */
+
+.country-caption {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  transform: translateX(-50%);
+  font-size: 1.3rem;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  pointer-events: none !important;
+}
+
+.country-caption-visible {
+  opacity: 1;
+}
+
 @media (max-width: 640px) {
+  .country-caption {
+    font-size: 1rem;
+  }
+
   .quote-text {
     font-size: 1.15rem;
   }

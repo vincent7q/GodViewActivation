@@ -143,6 +143,12 @@ export class Earth {
     this.clouds.rotation.y += EARTH_ROTATION_SPEED * CLOUD_SPEED_FACTOR * dt;
   }
 
+  /** Total surface yaw: random per-visit group offset + accumulated spin.
+   *  This is the rotation lat/lon → world math must use. */
+  get totalSurfaceRotationY(): number {
+    return this.group.rotation.y + this.surface.rotation.y;
+  }
+
   /** GodView grading hook: 1.0 = normal, higher = stronger glow. */
   setAtmosphereIntensity(value: number): void {
     this.atmosphereMaterial.uniforms.uIntensity.value = value;
