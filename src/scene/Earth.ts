@@ -79,7 +79,10 @@ export class Earth {
   private readonly atmosphereMaterial: THREE.ShaderMaterial;
   private readonly loader = new THREE.TextureLoader();
 
-  constructor(segments: number) {
+  constructor(
+    segments: number,
+    private readonly anisotropy = 1,
+  ) {
     const geometry = new THREE.SphereGeometry(1, segments, segments);
 
     this.surfaceMaterial = new THREE.ShaderMaterial({
@@ -158,14 +161,24 @@ export class Earth {
     return this.atmosphereMaterial.uniforms.uIntensity.value as number;
   }
 
+  /** Progressive clarity: hot-swap the day map (e.g. the 8K variant) once
+   *  it has loaded in the background. Startup always uses the 2K set. */
+  async upgradeDayMap(path: string): Promise<void> {
+    const texture = await this.loadColorTexture(path);
+    const previous = this.surfaceMaterial.uniforms.uDayMap.value as THREE.Texture | null;
+    this.surfaceMaterial.uniforms.uDayMap.value = texture;
+    previous?.dispose();
+  }
+
   private async loadColorTexture(url: string): Promise<THREE.Texture> {
     const texture = await this.loader.loadAsync(url);
     texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 4;
+    texture.anisotropy = this.anisotropy;
     return texture;
   }
 
   private applyTextures(day: THREE.Texture, night: THREE.Texture, clouds: THREE.Texture): void {
+    clouds.anisotropy = this.anisotropy;
     this.surfaceMaterial.uniforms.uDayMap.value = day;
     this.surfaceMaterial.uniforms.uNightMap.value = night;
     this.cloudsMaterial.alphaMap = clouds;

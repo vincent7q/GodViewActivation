@@ -4,6 +4,8 @@ export interface QualitySettings {
   sphereSegments: number;
   maxPixelRatio: number;
   starCount: number;
+  anisotropyCap: number;
+  highResDayMap: boolean;
 }
 
 export function detectQuality(): QualitySettings {
@@ -11,8 +13,8 @@ export function detectQuality(): QualitySettings {
     /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
   return isMobile
-    ? { sphereSegments: 64, maxPixelRatio: 1.5, starCount: 4000 }
-    : { sphereSegments: 128, maxPixelRatio: 2, starCount: 8000 };
+    ? { sphereSegments: 64, maxPixelRatio: 1.5, starCount: 4000, anisotropyCap: 8, highResDayMap: false }
+    : { sphereSegments: 128, maxPixelRatio: 2, starCount: 8000, anisotropyCap: 16, highResDayMap: true };
 }
 
 export type UpdateFn = (dt: number, elapsed: number) => void;
