@@ -54,18 +54,30 @@ describe('GodViewMode', () => {
     expect(events).toEqual(['enterStart']);
   });
 
-  test('requestExit leaves godview but is a no-op elsewhere', () => {
-    mode.requestExit();
-    expect(mode.state).toBe('exploring');
-
+  test('requestExit exits from godview', () => {
     mode.toggle();
-    mode.requestExit();
-    expect(mode.state).toBe('transitioning');
-
     mode.notifyTransitionComplete();
     mode.requestExit();
     expect(mode.state).toBe('returning');
     expect(events).toEqual(['enterStart', 'settled', 'exitStart']);
+  });
+
+  test('requestExit aborts the outbound flight', () => {
+    mode.toggle();
+    mode.requestExit();
+    expect(mode.state).toBe('returning');
+    expect(events).toEqual(['enterStart', 'exitStart']);
+  });
+
+  test('requestExit is a no-op while exploring or returning', () => {
+    mode.requestExit();
+    expect(mode.state).toBe('exploring');
+
+    mode.toggle();
+    mode.requestExit(); // now returning
+    mode.requestExit(); // must not double-fire
+    expect(mode.state).toBe('returning');
+    expect(events).toEqual(['enterStart', 'exitStart']);
   });
 
   test('notifyTransitionComplete is ignored in stable states', () => {

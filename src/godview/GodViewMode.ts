@@ -28,9 +28,9 @@ export class GodViewMode {
     }
   }
 
-  /** ESC or drag: only meaningful while settled in godview. */
+  /** ESC or tap: exits from godview, or aborts the outbound flight. */
   requestExit(): void {
-    if (this.currentState === 'godview') {
+    if (this.currentState === 'godview' || this.currentState === 'transitioning') {
       this.setState('returning', 'exitStart');
     }
   }
