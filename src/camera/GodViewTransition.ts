@@ -1,8 +1,5 @@
 import * as THREE from 'three';
 import { Tween } from '../godview/tween';
-import { SUN_DIRECTION } from '../scene/Lighting';
-
-export const HERO_DISTANCE = 3.4;
 
 // Interpolates around the globe, not through it: slerp the direction,
 // lerp the radius.
@@ -26,14 +23,6 @@ export function sphericalLerp(from: THREE.Vector3, to: THREE.Vector3, t: number)
 
   const radius = THREE.MathUtils.lerp(from.length(), to.length(), t);
   return direction.multiplyScalar(radius);
-}
-
-// The iconic vantage: whole Earth, mostly lit, sun ~55° off-axis so the
-// terminator and atmospheric rim are both in frame.
-export function computeHeroPosition(): THREE.Vector3 {
-  return SUN_DIRECTION.clone()
-    .applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(55))
-    .multiplyScalar(HERO_DISTANCE);
 }
 
 export class GodViewTransition {

@@ -4,17 +4,18 @@ import { createLighting } from './scene/Lighting';
 import { createStarfield } from './scene/Starfield';
 import { Earth, ATMOSPHERE_BASE_INTENSITY } from './scene/Earth';
 import { ExploreControls } from './camera/ExploreControls';
-import { GodViewTransition, computeHeroPosition } from './camera/GodViewTransition';
+import { GodViewTransition } from './camera/GodViewTransition';
 import { GodViewMode } from './godview/GodViewMode';
+import { JourneyPlayer, buildJourney, DESCEND_SECONDS } from './godview/journey';
 import { QUOTES, QuoteRotation } from './godview/quotes';
 import { Tween } from './godview/tween';
 import { AudioEngine } from './audio/AudioEngine';
 import { showWelcomeScreen } from './ui/WelcomeScreen';
 import { Hud } from './ui/Hud';
 import { QuoteOverlay } from './ui/QuoteOverlay';
+import { CountryCaption } from './ui/CountryCaption';
 
-const FLIGHT_SECONDS = 6;
-const RETURN_SECONDS = 4;
+const RETURN_SECONDS = 12;
 const GODVIEW_EXPOSURE = 1.35;
 const GODVIEW_ATMOSPHERE = 2.1;
 
@@ -42,6 +43,7 @@ async function bootstrap(): Promise<void> {
   const quotes = new QuoteRotation(QUOTES);
   const quoteOverlay = new QuoteOverlay(uiRoot);
   const hud = new Hud(uiRoot);
+  const caption = new CountryCaption(uiRoot);
 
   // --- grading (exposure + atmosphere glow) -------------------------
   const gradingTweens: Tween[] = [];
@@ -59,23 +61,36 @@ async function bootstrap(): Promise<void> {
 
   // --- GodView orchestration -----------------------------------------
   const restorePosition = new THREE.Vector3();
+  let journey: JourneyPlayer | null = null;
 
   mode.on('enterStart', () => {
     restorePosition.copy(manager.camera.position);
     controls.enabled = false;
     hud.setGodViewActive(true);
     audio.setMood('godview');
-    rampGrading(GODVIEW_EXPOSURE, GODVIEW_ATMOSPHERE, FLIGHT_SECONDS);
-    transition.flyTo(computeHeroPosition(), FLIGHT_SECONDS, () =>
-      mode.notifyTransitionComplete(),
+    rampGrading(GODVIEW_EXPOSURE, GODVIEW_ATMOSPHERE, DESCEND_SECONDS);
+    journey = new JourneyPlayer(
+      buildJourney(manager.camera.position, earth.totalSurfaceRotationY),
+      {
+        onPhase: (phase) => {
+          if (phase.kind === 'dwell') {
+            caption.show(phase.country ?? '');
+            mode.notifyTransitionComplete(); // settles on the first dwell; no-op after
+          } else if (phase.kind === 'ascend') {
+            caption.hide();
+          } else if (phase.kind === 'ascend-quote' || phase.kind === 'hold') {
+            quoteOverlay.show(quotes.next());
+          }
+        },
+        onComplete: () => mode.requestExit(),
+      },
     );
   });
 
-  mode.on('settled', () => {
-    quoteOverlay.show(quotes.next());
-  });
-
   mode.on('exitStart', () => {
+    journey?.stop();
+    journey = null;
+    caption.hide();
     quoteOverlay.hide();
     audio.setMood('exploring');
     rampGrading(1.0, ATMOSPHERE_BASE_INTENSITY, RETURN_SECONDS);
@@ -98,6 +113,13 @@ async function bootstrap(): Promise<void> {
   // --- frame loop -------------------------------------------------------
   manager.onUpdate((dt) => {
     earth.update(dt);
+    if (journey) {
+      const pos = journey.update(dt);
+      if (pos) {
+        manager.camera.position.copy(pos);
+        manager.camera.lookAt(0, 0, 0);
+      }
+    }
     transition.update(dt);
     for (let i = gradingTweens.length - 1; i >= 0; i--) {
       if (gradingTweens[i].update(dt)) gradingTweens.splice(i, 1);

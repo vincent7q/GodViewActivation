@@ -3,15 +3,16 @@ export interface Quote {
   author: string;
 }
 
-// Shown one per GodView activation, in rotation.
+// Two are shown per journey — mid-ascend, then at the pale-blue-dot hold —
+// so Sagan's dot quote sits second, landing on the hold beat first time out.
 export const QUOTES: Quote[] = [
-  {
-    text: 'Look again at that dot. That’s here. That’s home. That’s us.',
-    author: 'Carl Sagan',
-  },
   {
     text: 'Suddenly, from behind the rim of the Moon, there emerges a sparkling blue and white jewel… home.',
     author: 'Edgar Mitchell, Apollo 14',
+  },
+  {
+    text: 'Look again at that dot. That’s here. That’s home. That’s us.',
+    author: 'Carl Sagan',
   },
   {
     text: 'From out there on the Moon, international politics look so petty.',

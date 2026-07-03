@@ -1,12 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import * as THREE from 'three';
-import {
-  GodViewTransition,
-  HERO_DISTANCE,
-  computeHeroPosition,
-  sphericalLerp,
-} from '../src/camera/GodViewTransition';
-import { SUN_DIRECTION } from '../src/scene/Lighting';
+import { GodViewTransition, sphericalLerp } from '../src/camera/GodViewTransition';
 
 describe('sphericalLerp', () => {
   const from = new THREE.Vector3(0, 0, 5);
@@ -32,33 +26,23 @@ describe('sphericalLerp', () => {
   });
 });
 
-describe('computeHeroPosition', () => {
-  test('sits at the hero distance', () => {
-    expect(computeHeroPosition().length()).toBeCloseTo(HERO_DISTANCE);
-  });
-
-  test('views the lit side with the terminator in frame', () => {
-    const cosSun = computeHeroPosition().normalize().dot(SUN_DIRECTION);
-    expect(cosSun).toBeGreaterThan(0.3); // mostly lit
-    expect(cosSun).toBeLessThan(0.95); // but not sun-flat: rim + terminator visible
-  });
-});
-
 describe('GodViewTransition', () => {
+  const target = new THREE.Vector3(2, 1, 0).normalize().multiplyScalar(3.4);
+
   test('flies the camera to the target and reports completion', () => {
     const camera = new THREE.PerspectiveCamera();
     camera.position.set(0, 0.4, 2);
 
     let completed = false;
     const transition = new GodViewTransition(camera);
-    transition.flyTo(computeHeroPosition(), 6, () => (completed = true));
+    transition.flyTo(target, 6, () => (completed = true));
 
     // Drive a bit past the nominal duration; FP accumulation of 0.1s
     // steps lands just short of exactly 6.0.
     for (let i = 0; i < 70 && !completed; i++) transition.update(0.1);
 
     expect(completed).toBe(true);
-    expect(camera.position.distanceTo(computeHeroPosition())).toBeLessThan(1e-3);
+    expect(camera.position.distanceTo(target)).toBeLessThan(1e-3);
   });
 
   test('keeps looking at the origin mid-flight', () => {
@@ -66,7 +50,7 @@ describe('GodViewTransition', () => {
     camera.position.set(0, 0, 3);
 
     const transition = new GodViewTransition(camera);
-    transition.flyTo(computeHeroPosition(), 6);
+    transition.flyTo(target, 6);
     transition.update(3); // halfway
 
     const forward = new THREE.Vector3();
