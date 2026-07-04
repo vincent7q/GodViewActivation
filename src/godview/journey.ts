@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { sphericalLerp } from '../camera/GodViewTransition';
 import { EARTH_ROTATION_SPEED } from '../scene/Earth';
 import { SUN_DIRECTION } from '../scene/Lighting';
+import { COSMIC_STAGES } from './cosmicStages';
 import { TOUR_COUNTRIES, latLonToWorld } from './countries';
 import { easeInOutCubic } from './tween';
 
@@ -14,7 +15,6 @@ export const LEG_SECONDS = 5;
 export const ASCEND_SILENT_SECONDS = 12;
 export const ASCEND_QUOTE_SECONDS = 18;
 export const HOLD_SECONDS = 8;
-export const REVEAL_SECONDS = 22;
 export const REVEAL_RADIUS = 250;
 const REVEAL_LOOK_LANDSCAPE = 120;
 const REVEAL_LOOK_PORTRAIT = 35;
@@ -27,12 +27,14 @@ export type JourneyPhaseKind =
   | 'ascend'
   | 'ascend-quote'
   | 'hold'
-  | 'reveal';
+  | 'cosmic';
 
 export interface JourneyPhase {
   kind: JourneyPhaseKind;
   /** Set on dwell phases: the caption to show. */
   country?: string;
+  /** Set on cosmic phases: which zoom-out stage this is (COSMIC_STAGES key). */
+  stage?: string;
   duration: number;
   from: THREE.Vector3;
   to: THREE.Vector3;
@@ -76,10 +78,11 @@ export function buildJourney(
     kind: JourneyPhaseKind,
     duration: number,
     to: THREE.Vector3,
-    extras: { country?: string; lookTo?: THREE.Vector3 } = {},
+    extras: { country?: string; stage?: string; lookTo?: THREE.Vector3 } = {},
   ): void => {
     const phase: JourneyPhase = { kind, duration, from: cursor.clone(), to: to.clone() };
     if (extras.country !== undefined) phase.country = extras.country;
+    if (extras.stage !== undefined) phase.stage = extras.stage;
     if (extras.lookTo !== undefined) phase.lookTo = extras.lookTo.clone();
     phases.push(phase);
     cursor = to.clone();
@@ -99,7 +102,16 @@ export function buildJourney(
   add('ascend', ASCEND_SILENT_SECONDS, outward.clone().multiplyScalar(ASCEND_MIDPOINT_RADIUS));
   add('ascend-quote', ASCEND_QUOTE_SECONDS, outward.clone().multiplyScalar(DOT_RADIUS));
   add('hold', HOLD_SECONDS, outward.clone().multiplyScalar(DOT_RADIUS));
-  add('reveal', REVEAL_SECONDS, computeRevealPosition(), { lookTo: computeRevealLook(aspect) });
+
+  // Cosmic zoom-out: one flight to the reveal vantage, then the camera
+  // parks — the scenery (stage crossfades) performs the zoom.
+  const revealPosition = computeRevealPosition();
+  COSMIC_STAGES.forEach((stage, i) => {
+    add('cosmic', stage.duration, revealPosition, {
+      stage: stage.key,
+      lookTo: i === 0 ? computeRevealLook(aspect) : undefined,
+    });
+  });
 
   return phases;
 }

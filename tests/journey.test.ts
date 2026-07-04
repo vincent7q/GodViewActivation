@@ -11,6 +11,7 @@ import {
   computeRevealPosition,
 } from '../src/godview/journey';
 import { TOUR_COUNTRIES, latLonToWorld } from '../src/godview/countries';
+import { COSMIC_STAGES, COSMIC_TOTAL_SECONDS } from '../src/godview/cosmicStages';
 import { EARTH_ROTATION_SPEED } from '../src/scene/Earth';
 import { SUN_DIRECTION } from '../src/scene/Lighting';
 
@@ -32,8 +33,20 @@ describe('buildJourney', () => {
       'ascend',
       'ascend-quote',
       'hold',
-      'reveal',
+      'cosmic',
+      'cosmic',
+      'cosmic',
+      'cosmic',
+      'cosmic',
+      'cosmic',
+      'cosmic',
     ]);
+  });
+
+  test('cosmic phases carry the stage keys in ladder order', () => {
+    const cosmic = phases.filter((p) => p.kind === 'cosmic');
+    expect(cosmic.map((p) => p.stage)).toEqual(COSMIC_STAGES.map((s) => s.key));
+    cosmic.forEach((p, i) => expect(p.duration).toBe(COSMIC_STAGES[i].duration));
   });
 
   test('names the dwell captions in tour order', () => {
@@ -55,7 +68,7 @@ describe('buildJourney', () => {
     for (const p of phases.filter((p) => p.kind === 'dwell')) {
       expect(p.to.length()).toBeCloseTo(SKIM_RADIUS);
     }
-    const hold = phases[phases.length - 2];
+    const hold = phases.find((p) => p.kind === 'hold')!;
     expect(hold.to.length()).toBeCloseTo(DOT_RADIUS);
     expect(hold.from.distanceTo(hold.to)).toBeLessThan(1e-6); // it's a hold
   });
@@ -106,10 +119,11 @@ describe('JourneyPlayer', () => {
       onPhase: (p) => seen.push(p.kind),
       onComplete: () => completions++,
     });
-    drive(player, 105); // total outbound is 97s
+    drive(player, 90 + COSMIC_TOTAL_SECONDS); // outbound is 75s + cosmic
     expect(seen).toEqual([
       'descend', 'dwell', 'leg', 'dwell', 'leg', 'dwell', 'leg', 'dwell',
-      'ascend', 'ascend-quote', 'hold', 'reveal',
+      'ascend', 'ascend-quote', 'hold',
+      'cosmic', 'cosmic', 'cosmic', 'cosmic', 'cosmic', 'cosmic', 'cosmic',
     ]);
     expect(completions).toBe(1);
     expect(player.active).toBe(false);
@@ -119,13 +133,13 @@ describe('JourneyPlayer', () => {
   test('ends exactly at the reveal vantage', () => {
     const phases = buildJourney(START, 0, 16 / 9);
     const player = new JourneyPlayer(phases);
-    const last = drive(player, 105);
+    const last = drive(player, 90 + COSMIC_TOTAL_SECONDS);
     expect(last!.distanceTo(phases[phases.length - 1].to)).toBeLessThan(1e-6);
   });
 
   test('never dips below the explore minimum distance (no globe clipping)', () => {
     const player = new JourneyPlayer(buildJourney(START, 1.7, 16 / 9));
-    for (let t = 0; t < 105; t += 0.1) {
+    for (let t = 0; t < 90 + COSMIC_TOTAL_SECONDS; t += 0.1) {
       const pos = player.update(0.1);
       if (pos) expect(pos.length()).toBeGreaterThanOrEqual(1.25 - 1e-9);
     }
@@ -157,14 +171,20 @@ describe('JourneyPlayer', () => {
   });
 });
 
-describe('reveal phase', () => {
+describe('cosmic finale', () => {
   const phases = buildJourney(START, 0.5, 16 / 9);
-  const reveal = phases[phases.length - 1];
+  const firstCosmic = phases.find((p) => p.kind === 'cosmic')!;
 
-  test('flies to the reveal vantage, continuous with the hold', () => {
-    expect(reveal.kind).toBe('reveal');
-    expect(reveal.to.length()).toBeCloseTo(REVEAL_RADIUS);
-    expect(reveal.from.distanceTo(phases[phases.length - 2].to)).toBeLessThan(1e-6);
+  test('flies to the reveal vantage, continuous with the hold, then holds there', () => {
+    expect(firstCosmic.stage).toBe('solar-system');
+    expect(firstCosmic.to.length()).toBeCloseTo(REVEAL_RADIUS);
+    const holdIndex = phases.findIndex((p) => p.kind === 'cosmic') - 1;
+    expect(firstCosmic.from.distanceTo(phases[holdIndex].to)).toBeLessThan(1e-6);
+    // Every later cosmic phase parks at the same vantage.
+    for (const p of phases.filter((p) => p.kind === 'cosmic').slice(1)) {
+      expect(p.from.distanceTo(firstCosmic.to)).toBeLessThan(1e-6);
+      expect(p.to.distanceTo(firstCosmic.to)).toBeLessThan(1e-6);
+    }
   });
 
   test('frames Earth and the sun axis on landscape screens', () => {
@@ -191,9 +211,9 @@ describe('reveal phase', () => {
       for (let t = 0; t < seconds; t += 0.1) player.update(0.1);
     };
     expect(player.lookTarget.length()).toBe(0);
-    drive(80); // into the reveal (outbound total 97s; reveal starts at 75s)
+    drive(80); // into the first cosmic phase (starts at 75s)
     expect(player.lookTarget.length()).toBeGreaterThan(0);
-    drive(30); // finish
+    drive(20 + COSMIC_TOTAL_SECONDS); // finish
     expect(player.lookTarget.distanceTo(computeRevealLook(16 / 9))).toBeLessThan(1e-6);
   });
 });
