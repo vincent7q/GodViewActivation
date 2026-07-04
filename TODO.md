@@ -1,4 +1,11 @@
-### Enhancements
+### Enhancements — DONE (2026-07-04)
+
+Both items below are implemented: the solar system is now alive during free
+exploration (Sun, Moon, and all 9 planets on slow orbits — Pluto and the
+Moon use flat colors until solarsystemscope.com lifts its download captcha),
+and the GodView tour continues past the solar system through the full
+cosmic ladder below, with bilingual chapter cards, ending back at Earth.
+
 1. I find there is no other plants in Solar System no matter how i switch the angle of earth in this program. i tried to view from different angles and zoom in/out but not able to see moon, sun, mars...and other plants. I expect solar system plants are included and plants are running according to solar system. that means all 9 plants should moving according to solar system slowly.
 
 

@@ -15,7 +15,7 @@ Toolchain note: this machine runs Node 20.17, so Vite is pinned to v6 and Vitest
 
 ## What This Product Is
 
-A free, browser-based experience that triggers the "Overview Effect": the visitor **freely explores Earth from orbit**, then presses a **GodView** button that plays a ~90 s cinematic journey — down over named countries, then out until Earth is a pale blue dot — before returning them home. This V2 vision (exploration + toggle) **supersedes the guided-journey model described in `docs/PRD.md`** — see the header note there and `docs/plans/2026-07-02-godview-v2-design.md` for the validated design.
+A free, browser-based experience that triggers the "Overview Effect": the visitor **freely explores Earth from orbit** (amid a living solar system — Sun, Moon, and nine planets on slow heliocentric orbits, `src/scene/planetLayout.ts` + `SolarSystem.ts`), then presses a **GodView** button that plays a ~2¾ min cinematic journey — down over named countries, out to a pale blue dot, then a cosmic zoom-out (solar system → Orion Arm → Milky Way → Local Group → Virgo → Laniakea → Observable Universe; `cosmicStages.ts` envelopes drive shrink/crossfade scenery in `CosmicScenery.ts`) — before returning them home. This V2 vision (exploration + toggle) **supersedes the guided-journey model described in `docs/PRD.md`** — see the header note there and `docs/plans/2026-07-02-godview-v2-design.md` for the validated design.
 
 Stack: Vite + TypeScript + Three.js, **no UI framework** (overlays are plain DOM/CSS in `src/ui/`). Client-side only; deploys as a static site.
 
