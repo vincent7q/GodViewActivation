@@ -49,7 +49,7 @@ cd godviewactivation
 docker compose up -d --build
 ```
 
-The site is now on port 80: `http://<server-ip>/`. The container restarts automatically on reboot (`restart: unless-stopped`).
+The site is now on port 3004: `http://<server-ip>:3004/`. The container restarts automatically on reboot (`restart: unless-stopped`).
 
 **Update to a new version:**
 

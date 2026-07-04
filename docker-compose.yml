@@ -4,5 +4,5 @@ services:
     image: godviewactivation:latest
     container_name: godview
     ports:
-      - "80:80"
+      - "3004:80"
     restart: unless-stopped
