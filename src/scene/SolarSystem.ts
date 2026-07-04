@@ -1,76 +1,90 @@
 import * as THREE from 'three';
-import { PLANETS, SUN_CORE_RADIUS, SUN_DISTANCE, planetPosition } from './planetLayout';
-import { SUN_DIRECTION } from './Lighting';
+import {
+  MOON_COLOR,
+  MOON_RADIUS,
+  PLANETS,
+  SUN_CORE_RADIUS,
+  moonPosition,
+  planetPosition,
+  sunPosition,
+  type PlanetSpec,
+} from './planetLayout';
 
 const SATURN_RING_TILT = THREE.MathUtils.degToRad(63);
 const GLOW_SCALE = 90;
 
-// The reveal's scenery: unlit textured spheres (the planets sit between
-// Earth and the sun, so their lit faces point away from the camera —
-// physically they'd be silhouettes; MeshBasicMaterial keeps them readable)
-// plus an additive glow sprite on the sun. Not a light source: the
-// DirectionalLight in Lighting.ts stays the single lighting truth.
+// The living solar system: sun (textured core + additive glow sprite),
+// nine planets on slow heliocentric orbits, and the Moon around Earth.
+// Visible from startup; during the cosmic zoom-out main.ts scales and
+// fades the whole group. Unlit materials by design — the DirectionalLight
+// in Lighting.ts stays the single lighting truth for Earth itself.
 export class SolarSystem {
   readonly group = new THREE.Group();
 
   private readonly materials: Array<THREE.MeshBasicMaterial | THREE.SpriteMaterial> = [];
   private readonly texturedMaterials = new Map<string, THREE.MeshBasicMaterial>();
   private readonly loader = new THREE.TextureLoader();
-  private currentOpacity = 0;
+  private readonly planetMeshes: Array<{ spec: PlanetSpec; mesh: THREE.Mesh }> = [];
+  private saturnRing: THREE.Mesh | null = null;
+  private readonly moon: THREE.Mesh;
+  private elapsed = 0;
+  private currentOpacity = 1;
 
   constructor() {
-    this.group.visible = false;
-
-    const sunPosition = SUN_DIRECTION.clone().multiplyScalar(SUN_DISTANCE);
-
     const core = new THREE.Mesh(
       new THREE.SphereGeometry(SUN_CORE_RADIUS, 32, 32),
-      this.track('2k_sun.jpg', new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })),
+      this.track(new THREE.MeshBasicMaterial({ transparent: true }), '2k_sun.jpg'),
     );
-    core.position.copy(sunPosition);
+    core.position.copy(sunPosition());
     this.group.add(core);
 
     const glowMaterial = new THREE.SpriteMaterial({
       map: makeGlowTexture(),
       blending: THREE.AdditiveBlending,
       transparent: true,
-      opacity: 0,
       depthWrite: false,
     });
     this.materials.push(glowMaterial);
     const glow = new THREE.Sprite(glowMaterial);
-    glow.position.copy(sunPosition);
+    glow.position.copy(sunPosition());
     glow.scale.setScalar(GLOW_SCALE);
     this.group.add(glow);
 
     for (const spec of PLANETS) {
       const material = this.track(
-        spec.texture,
-        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }),
+        new THREE.MeshBasicMaterial({ transparent: true, color: spec.color }),
+        spec.texture ?? undefined,
       );
-      const planet = new THREE.Mesh(new THREE.SphereGeometry(spec.radius, 48, 48), material);
-      planet.position.copy(planetPosition(spec));
-      this.group.add(planet);
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(spec.radius, 48, 48), material);
+      mesh.position.copy(planetPosition(spec, 0));
+      this.group.add(mesh);
+      this.planetMeshes.push({ spec, mesh });
 
       if (spec.name === 'Saturn') {
         const ringMaterial = this.track(
-          '2k_saturn_ring_alpha.png',
           new THREE.MeshBasicMaterial({
             transparent: true,
-            opacity: 0,
             side: THREE.DoubleSide,
             depthWrite: false,
           }),
+          '2k_saturn_ring_alpha.png',
         );
-        const ring = new THREE.Mesh(
+        this.saturnRing = new THREE.Mesh(
           makeRingGeometry(spec.radius * 1.4, spec.radius * 2.3),
           ringMaterial,
         );
-        ring.position.copy(planet.position);
-        ring.rotation.x = SATURN_RING_TILT;
-        this.group.add(ring);
+        this.saturnRing.position.copy(mesh.position);
+        this.saturnRing.rotation.x = SATURN_RING_TILT;
+        this.group.add(this.saturnRing);
       }
     }
+
+    this.moon = new THREE.Mesh(
+      new THREE.SphereGeometry(MOON_RADIUS, 32, 32),
+      this.track(new THREE.MeshBasicMaterial({ transparent: true, color: MOON_COLOR })),
+    );
+    this.moon.position.copy(moonPosition(0));
+    this.group.add(this.moon);
   }
 
   /** Fetch all textures; call once (non-blocking) after the Earth loads. */
@@ -80,9 +94,22 @@ export class SolarSystem {
         const texture = await this.loader.loadAsync(`/textures/${file}`);
         texture.colorSpace = THREE.SRGBColorSpace;
         material.map = texture;
+        material.color.set(0xffffff);
         material.needsUpdate = true;
       }),
     );
+  }
+
+  /** Advance the orbits — call every frame; motion is slow by design. */
+  update(dt: number): void {
+    this.elapsed += dt;
+    for (const { spec, mesh } of this.planetMeshes) {
+      mesh.position.copy(planetPosition(spec, this.elapsed));
+      if (spec.name === 'Saturn' && this.saturnRing) {
+        this.saturnRing.position.copy(mesh.position);
+      }
+    }
+    this.moon.position.copy(moonPosition(this.elapsed));
   }
 
   setOpacity(value: number): void {
@@ -95,9 +122,9 @@ export class SolarSystem {
     return this.currentOpacity;
   }
 
-  private track(file: string, material: THREE.MeshBasicMaterial): THREE.MeshBasicMaterial {
+  private track(material: THREE.MeshBasicMaterial, file?: string): THREE.MeshBasicMaterial {
     this.materials.push(material);
-    this.texturedMaterials.set(file, material);
+    if (file) this.texturedMaterials.set(file, material);
     return material;
   }
 }
