@@ -194,6 +194,40 @@ body {
   color: var(--ui-fg-dim);
 }
 
+/* ---------- Cosmic caption (zoom-out chapter card) ---------- */
+
+.cosmic-caption {
+  position: absolute;
+  left: 50%;
+  top: 9%;
+  transform: translateX(-50%);
+  max-width: 36rem;
+  padding: 0 1.5rem;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+  pointer-events: none !important;
+}
+
+.cosmic-caption-visible {
+  opacity: 1;
+}
+
+.cosmic-caption-title {
+  font-size: 1.45rem;
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
+}
+
+.cosmic-caption-desc {
+  margin-top: 0.7rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--ui-fg-dim);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
+}
+
 /* ---------- Country caption (journey flyover) ---------- */
 
 .country-caption {
@@ -218,6 +252,14 @@ body {
 @media (max-width: 640px) {
   .country-caption {
     font-size: 1rem;
+  }
+
+  .cosmic-caption-title {
+    font-size: 1.15rem;
+  }
+
+  .cosmic-caption-desc {
+    font-size: 0.85rem;
   }
 
   .quote-text {
