@@ -6,9 +6,17 @@ import { Earth, ATMOSPHERE_BASE_INTENSITY } from './scene/Earth';
 import { ExploreControls } from './camera/ExploreControls';
 import { GodViewTransition } from './camera/GodViewTransition';
 import { GodViewMode } from './godview/GodViewMode';
-import { JourneyPlayer, buildJourney, DESCEND_SECONDS } from './godview/journey';
+import {
+  JourneyPlayer,
+  buildJourney,
+  computeRevealLook,
+  DESCEND_SECONDS,
+} from './godview/journey';
+import { COSMIC_STAGES, EARTH_INFO, stageEnvelopes } from './godview/cosmicStages';
 import { QUOTES, QuoteRotation, REVEAL_QUOTE } from './godview/quotes';
 import { SolarSystem } from './scene/SolarSystem';
+import { CosmicScenery } from './scene/CosmicScenery';
+import { CosmicCaption } from './ui/CosmicCaption';
 import { Tween } from './godview/tween';
 import { AudioEngine } from './audio/AudioEngine';
 import { showWelcomeScreen } from './ui/WelcomeScreen';
@@ -43,7 +51,10 @@ async function bootstrap(): Promise<void> {
 
   const solar = new SolarSystem();
   manager.scene.add(solar.group);
-  void solar.load(); // in the background — needed ~100s in, at the reveal
+  void solar.load(); // textures arrive in the background; colors until then
+
+  const cosmicScenery = new CosmicScenery();
+  manager.scene.add(cosmicScenery.group);
 
   if (quality.highResDayMap && manager.renderer.capabilities.maxTextureSize >= 8192) {
     void earth.upgradeDayMap('/textures/8k_earth_daymap.jpg');
@@ -57,6 +68,7 @@ async function bootstrap(): Promise<void> {
   const quoteOverlay = new QuoteOverlay(uiRoot);
   const hud = new Hud(uiRoot);
   const caption = new CountryCaption(uiRoot);
+  const cosmicCaption = new CosmicCaption(uiRoot);
 
   // --- grading (exposure + atmosphere glow) -------------------------
   const gradingTweens: Tween[] = [];
@@ -76,12 +88,12 @@ async function bootstrap(): Promise<void> {
   const restorePosition = new THREE.Vector3();
   let journey: JourneyPlayer | null = null;
 
-  const fadeSolar = (to: number, seconds: number): void => {
-    const from = solar.opacity;
-    gradingTweens.push(
-      new Tween(seconds, (v) => solar.setOpacity(THREE.MathUtils.lerp(from, to, v))),
-    );
-  };
+  // Cosmic zoom-out state: a clock drives the stage envelopes; masterFade
+  // lets exits dim everything without disturbing the envelope math.
+  const stageByKey = new Map(COSMIC_STAGES.map((s) => [s.key, s]));
+  let cosmicActive = false;
+  let cosmicTime = 0;
+  let masterFade = 1;
 
   mode.on('enterStart', () => {
     restorePosition.copy(manager.camera.position);
@@ -100,9 +112,16 @@ async function bootstrap(): Promise<void> {
             caption.hide();
           } else if (phase.kind === 'ascend-quote') {
             quoteOverlay.show(quotes.next());
-          } else if (phase.kind === 'reveal') {
-            fadeSolar(1, 4);
-            quoteOverlay.show(REVEAL_QUOTE);
+          } else if (phase.kind === 'cosmic') {
+            if (phase.stage === 'solar-system') {
+              cosmicActive = true;
+              cosmicTime = 0;
+              masterFade = 1;
+              cosmicScenery.group.position.copy(computeRevealLook(manager.camera.aspect));
+            }
+            const spec = stageByKey.get(phase.stage ?? '');
+            if (spec) cosmicCaption.show(spec);
+            if (phase.stage === 'observable-universe') quoteOverlay.show(REVEAL_QUOTE);
           }
         },
         onComplete: () => mode.requestExit(),
@@ -115,17 +134,30 @@ async function bootstrap(): Promise<void> {
     journey?.stop();
     journey = null;
     caption.hide();
+    cosmicCaption.hide();
     quoteOverlay.hide();
     audio.setMood('exploring');
-    // rampGrading clears the tween list, so it must run before fadeSolar.
+    // rampGrading clears the tween list, so it must run before other pushes.
     rampGrading(1.0, ATMOSPHERE_BASE_INTENSITY, RETURN_SECONDS);
-    fadeSolar(0, 3);
+    if (cosmicActive) {
+      gradingTweens.push(new Tween(3, (v) => (masterFade = 1 - v)));
+    }
     transition.flyTo(restorePosition, RETURN_SECONDS, () => mode.notifyTransitionComplete(), lookFrom);
   });
 
   mode.on('returned', () => {
     controls.enabled = true;
     hud.setGodViewActive(false);
+    if (cosmicActive) {
+      cosmicActive = false;
+      cosmicTime = 0;
+      masterFade = 1;
+      cosmicScenery.reset();
+      solar.group.scale.setScalar(1);
+      // Ambient solar system fades back in around the visitor.
+      gradingTweens.push(new Tween(2, (v) => solar.setOpacity(v)));
+      cosmicCaption.show(EARTH_INFO, 9000);
+    }
   });
 
   // --- inputs ---------------------------------------------------------
@@ -139,6 +171,14 @@ async function bootstrap(): Promise<void> {
   // --- frame loop -------------------------------------------------------
   manager.onUpdate((dt) => {
     earth.update(dt);
+    solar.update(dt);
+    if (cosmicActive) {
+      if (mode.state === 'godview') cosmicTime += dt;
+      const envelopes = stageEnvelopes(cosmicTime);
+      solar.group.scale.setScalar(envelopes[0].scale);
+      solar.setOpacity(envelopes[0].opacity * masterFade);
+      cosmicScenery.apply(envelopes, masterFade);
+    }
     if (journey) {
       const player = journey; // onComplete may null `journey` mid-update
       const pos = player.update(dt);
